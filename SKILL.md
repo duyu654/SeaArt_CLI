@@ -81,6 +81,43 @@ sac auth logout
 
 `auth login`, `auth status`, and `auth logout` all support `--output json`.
 
+**`auth status --output json` (authenticated):**
+
+```json
+{
+  "authenticated": true,
+  "key": "sa-a...xxxx",
+  "source": "config file",
+  "config": "/Users/you/.sac/config.json"
+}
+```
+
+**`auth status --output json` (not authenticated):**
+
+```json
+{
+  "authenticated": false,
+  "message": "Not authenticated.",
+  "hint": "Run: sac auth login --api-key <token>\nOr set: export SAC_API_KEY=<token>"
+}
+```
+
+**`auth login --output json` (success):**
+
+```json
+{
+  "authenticated": true,
+  "saved": true,
+  "key": "sa-a...xxxx",
+  "config": "/Users/you/.sac/config.json",
+  "verification": {
+    "status": "valid",
+    "message": "API key accepted; probe task was not found, as expected.",
+    "http_status": 404
+  }
+}
+```
+
 ## Agent Baseline
 
 Use this baseline for all structured commands:
@@ -141,34 +178,38 @@ sac config set --key output --value json
 sac config set --key timeout --value 600
 ```
 
+**`config show --output json`:**
+
+```json
+{
+  "multimodal_base_url": "https://openresty-gateway.api.seaart.ai/model",
+  "llm_base_url": "https://openresty-gateway.api.seaart.ai/llm",
+  "output": "json",
+  "timeout": 300,
+  "config_file": "/Users/you/.sac/config.json",
+  "api_key": "sa-a...xxxx",
+  "default_chat_model": "deepseek-v3-0324"
+}
+```
+
+Valid `config set` keys: `api_key`, `output`, `timeout`, `default_image_model`, `default_chat_model`, `multimodal_base_url`, `llm_base_url`
+
 ## Output Semantics
 
 - TTY → human-readable text with spinners
 - Non-TTY / pipe → JSON automatically when the command supports structured output
 - `--output json` or `SAC_OUTPUT=json` forces JSON in any context
 
-JSON output shapes:
-
-| Command + flags | Shape |
-|---|---|
-| `generate image` (default) | `{ "task_id": "...", "urls": ["https://..."] }` |
-| `generate image --out-dir` | `{ "task_id": "...", "saved": ["/path/to/file"] }` |
-| `generate image --async` | `{ "task_id": "...", "status": "in_progress" }` |
-| `generate video` (default) | `{ "task_id": "...", "urls": ["https://..."] }` |
-| `generate audio` (default) | `{ "task_id": "...", "urls": ["https://..."] }` |
-| `generate 3d` (default) | `{ "task_id": "...", "urls": ["https://..."] }` |
-| `generate task <id>` | full task payload with `output[].content[].url` |
-| `chat --message "..."` | `{ "content": "..." }` |
-| `auth status` | `{ "status": "...", "source": "..." }` |
-
 ## Command Reference
 
 ### generate image
 
+Create images. Polls until complete and returns URLs by default.
+
 ```bash
 sac generate image --prompt "a cat in space"
 sac generate image --prompt "product shot" --model kling_v3_image --aspect-ratio 1:1
-sac generate image --prompt "国风山水画" --model tencent_image_creation_3 --resolution 1024:1024
+sac generate image --prompt "国风山水画" --model tencent_image_creation_3 --resolution 1024:1024 --logo-add 1 --revise 1
 sac generate image --prompt "make it anime" --image-url https://example.com/input.png --action 1
 sac generate image --prompt "text" --n 2
 sac generate image --prompt "text" --width 1024 --height 1024
@@ -177,6 +218,29 @@ sac generate image --prompt "text" --async
 sac generate image --list-models
 sac generate image --list-models --provider volces
 ```
+
+**Flags:**
+
+| Flag | Type | Default | Description |
+|---|---|---|---|
+| `--prompt <text>` | string | required | Image description |
+| `--model <id>` | string | `volces_seedream_4_5` | Model ID (overridden by `default_image_model` config if set) |
+| `--n <count>` | number | 1 | Number of images |
+| `--width <px>` | number | — | Image width |
+| `--height <px>` | number | — | Image height |
+| `--aspect-ratio <ratio>` | string | — | e.g. `16:9`, `1:1` |
+| `--resolution <preset>` | string | — | e.g. `1024:1024` |
+| `--seed <n>` | number | — | Random seed |
+| `--steps <n>` | number | 20 | Inference steps |
+| `--cfg-scale <n>` | number | — | Guidance scale |
+| `--negative-prompt <text>` | string | — | Negative prompt |
+| `--image-url <url>` | string | — | Input image for i2i |
+| `--action <n>` | number | 0 | 0=t2i, 1=i2i, 3=t2i+controlnet, 5=i2i+controlnet |
+| `--out-dir <dir>` | string | — | Download images to this directory |
+| `--out-prefix <prefix>` | string | `image` | Filename prefix for downloads |
+| `--async` | boolean | false | Return task ID without polling |
+| `--list-models` | boolean | — | List available models and exit |
+| `--provider <id>` | string | — | Filter `--list-models` by provider |
 
 Built-in default model: `volces_seedream_4_5`
 
@@ -192,9 +256,29 @@ Built-in default model: `volces_seedream_4_5`
 
 **Tencent models**: `tencent_image_creation_3` (supports `--resolution`, `--seed`, `--logo-add 0|1`, `--revise 0|1`)
 
-Key flags: `--model`, `--prompt`, `--n`, `--width`, `--height`, `--aspect-ratio`, `--resolution`, `--seed`, `--image-url`, `--action`, `--out-dir`, `--out-prefix`, `--async`
+**`--output json` (polling complete, no `--out-dir`):**
+
+```json
+{ "task_id": "d7erdule878c738sr94g", "urls": ["https://image.cdn2.seaart.me/..."] }
+```
+
+**`--output json` with `--out-dir`:**
+
+```json
+{ "task_id": "d7erdule878c738sr94g", "saved": ["./output/image_001.webp"] }
+```
+
+**`--output json` with `--async`:**
+
+```json
+{ "task_id": "d7erdule878c738sr94g", "status": "in_progress" }
+```
+
+---
 
 ### generate video
+
+Create videos. Polls until complete and returns URLs by default.
 
 ```bash
 sac generate video --prompt "a fox in snow"
@@ -224,7 +308,7 @@ Built-in default model: `volces_seedance_1_5_pro`
 - Effects multi: `kling_effects_multi_v1`, `kling_effects_multi_v15`, `kling_effects_multi_v16` (require exactly 2 `--image-urls`, `--effect-scene`, `--duration`)
 - Duration extension: `kling_duration_extension` (requires `--video-url`, `--duration`)
 - Lipsync: `kling_lipsync` — `--lipsync-mode text2video` (requires `--prompt`, `--video-url`/`--video-id`, `--voice-id`, `--voice-language`) or `--lipsync-mode audio2video` (requires `--audio-url`)
-- Omni: `kling_omni_video`, `kling_v3_omni_video` (prompt-driven; supports `--image-url`, `--video-url`, `--aspect-ratio`, `--duration`)
+- Omni: `kling_omni_video`, `kling_v3_omni_video` (supports `--image-url`, `--video-url`, `--aspect-ratio`, `--duration`)
 
 **Tencent models**: `tencent_kling_v3`, `tencent_kling_v3_omni`, `tencent_mps_super_resolution` (requires `--video-url`, `--resolution 720P|1080P|2K|4K`, optional `--short 0|1`)
 
@@ -233,6 +317,14 @@ Built-in default model: `volces_seedance_1_5_pro`
 **Volces models**: `volces_seedance_1_5_pro`, `volces_seedance_2_0`, `volces_seedance_2_0_fast`, `volces_seedance_3_0`, `volces_seedance_3_0_pro`, `volces_seedance_30_i2v`, `volces_seedance_pro_fast`, `volces_draft_video`, `volces_jimeng_dream_actor_m1`, `volces_jimeng_dream_actor_m2`, `volces_realman_avatar_picture_omni_v2`, `volces_realman_avatar_picture_omni_v15`, `volces_realman_avatar_imitator_v2v`
 
 Key flags: `--duration`, `--size`, `--aspect-ratio`, `--resolution`, `--seed`, `--fps`, `--frames`, `--image-url`, `--image-tail-url`, `--image-urls`, `--video-url`, `--video-id`, `--audio-url`, `--audio-id`, `--voice-id`, `--voice-language`, `--voice-speed`, `--lipsync-mode`, `--effect-scene`, `--character-orientation`, `--keep-original-sound`, `--extension-type`, `--template`, `--reference-urls`, `--mask-urls`, `--audio` (AI audio), `--shot-type` (Wanx t2v)
+
+**`--output json` (polling complete):**
+
+```json
+{ "task_id": "...", "urls": ["https://..."] }
+```
+
+---
 
 ### generate audio
 
@@ -245,9 +337,17 @@ sac generate audio --model kling_video_to_audio --video-url https://example.com/
 Built-in default model: `lyria_3_pro_preview`
 
 **Models**:
-- `lyria_3_pro_preview` — music from text prompt
+- `lyria_3_pro_preview` — music from text prompt; requires `--prompt`
 - `mureka_song_generator` — song with lyrics; requires `--lyrics`; optional `--prompt`, `--mureka-model`, `--n`, `--reference-id`, `--vocal-id`, `--melody-id`
 - `kling_video_to_audio` — generate audio for a video; requires `--video-url` or `--video-id`; optional `--sound-effect-prompt`, `--n`
+
+**`--output json` (polling complete):**
+
+```json
+{ "task_id": "...", "urls": ["https://..."] }
+```
+
+---
 
 ### generate 3d
 
@@ -265,80 +365,132 @@ Default model routing (Tripo3D):
 - prompt only → `tripo3d_text_to_model`
 - single `--image-url` → `tripo3d_image_to_model`
 - repeated `--image-urls` → `tripo3d_multiview_to_model`
-- mixed or Tencent/Volces → pass `--model` explicitly
+- mixed or Tencent/Volces inputs → pass `--model` explicitly
 
 **Volces**: `volces_seed3d` (requires `--prompt` + `--image-url`)
 
 **Tencent**:
 - `tencent_hunyuan_3d` — requires exactly one of `--prompt`/`--image-url`/`--image-base64`; supports `--result-format`, `--enable-pbr`, repeated `--multi-view-image key=url`
-- `tencent_hunyuan_3d_pro` — same input requirement; supports `--face-count`, `--generate-type`, `--polygon-type`, `--enable-pbr`
-- `tencent_hunyuan_3d_rapid` — same input requirement; supports `--result-format`, `--enable-pbr`
+- `tencent_hunyuan_3d_pro` — same input; supports `--face-count`, `--generate-type`, `--polygon-type`, `--enable-pbr`
+- `tencent_hunyuan_3d_rapid` — same input; supports `--result-format`, `--enable-pbr`
+
+**`--output json` (polling complete):**
+
+```json
+{ "task_id": "...", "urls": ["https://..."] }
+```
+
+---
 
 ### generate task
 
-Query or wait for any generation task by ID:
+Query or wait for any generation task by ID.
 
 ```bash
 sac generate task <task-id>
-sac generate task <task-id> --output json     # full task payload
-sac generate task <task-id> --output-only-url # raw URL lines (text only, rejects --output json)
+sac generate task <task-id> --output json
+sac generate task <task-id> --output-only-url   # raw URL lines, rejects --output json
 ```
 
-`--output json` full payload includes `output[].content[].url` for download URLs.
+**`--output json`:**
+
+```json
+{
+  "id": "d7erdule878c738sr94g",
+  "status": "completed",
+  "progress": 1,
+  "output": [
+    {
+      "content": [
+        { "type": "image", "url": "https://image.cdn2.seaart.me/..." }
+      ]
+    }
+  ]
+}
+```
+
+Download URLs are at `output[].content[].url`.
+
+---
 
 ### chat
 
+**Automation rule: always pass `--message` and `--non-interactive` from scripts or agents.** Without `--message` in a TTY, an interactive REPL starts and blocks on keyboard input. Without `--message` outside a TTY, the command exits with code `2` instead of hanging.
+
 ```bash
-sac chat --message "Hello"                          # single-turn (default model: deepseek-v3-0324)
-sac chat --message "Hello" --output json            # { "content": "..." }
-sac chat --message "Hello" --stream                 # streaming tokens (text only)
+sac chat --message "Hello" --non-interactive --quiet --output json
+sac chat --message "Hello" --stream                  # streaming tokens (text only)
 sac chat --model gemini-2.5-pro --message "Hello"
-sac chat --system "You are a helpful assistant" --message "Explain recursion"
-sac chat --message "user:Hi" --message "assistant:Hello" --message "How are you?"
+sac chat --system "You are a code reviewer." --message "Review this: ..."
+sac chat --message "user:Hi" --message "assistant:Hello" --message "Why?"
 sac chat --messages-file messages.json
-sac chat --messages-file -                          # read JSON messages from stdin
-sac chat models                                     # list available LLM models
-sac chat models --output json
-sac chat models --filter claude
-sac chat set-model --model deepseek-v3-0324         # persist default model to config
+sac chat --messages-file -                           # read messages array from stdin
+sac chat models
+sac chat models --filter claude --output json
+sac chat set-model --model deepseek-v3-0324
 ```
 
-**Important for automation:**
+Default model: `deepseek-v3-0324`. Override with `--model` or persist with `sac chat set-model`.
 
-- Never run bare `sac chat` — without `--message` it starts an interactive REPL that blocks on keyboard input
-- Without `--message` in non-interactive mode the command exits with a usage error (no hang)
-- `--output json` only works for non-streaming single-turn chat
-- `sac chat --stream --output json` is a usage error
+**Flags:**
 
-Default model: `deepseek-v3-0324`. Override with `--model` or by running `sac chat set-model`.
+| Flag | Type | Default | Description |
+|---|---|---|---|
+| `--model <id>` | string | `deepseek-v3-0324` | Model ID |
+| `--message <text>` | array | — | Message text (repeatable); prefix `role:` to set role |
+| `--messages-file <path>` | string | — | JSON messages array file; `-` reads stdin |
+| `--system <text>` | string | — | System prompt |
+| `--max-tokens <n>` | number | — | Max tokens to generate |
+| `--temperature <n>` | number | — | Sampling temperature |
+| `--stream` | boolean | auto | Force streaming output |
 
-### auth
+**Message role syntax:**
 
 ```bash
-sac auth login --api-key sa-xxxxxxxx   # validate and save key to ~/.sac/config.json
-sac auth status                        # show stored key info (no network)
-sac auth status --check                # validate key against API (network call)
-sac auth logout                        # remove stored key
+--message "user:What is 2+2?"
+--message "assistant:4"
+--message "Why?"              # defaults to user role
 ```
 
-`auth login`, `auth status`, and `auth logout` all support `--output json`.
+**Messages file format:**
 
-### config
-
-```bash
-sac config show
-sac config show --output json
-sac config set --key <key> --value <value>
+```json
+[
+  { "role": "system", "content": "You are a helpful assistant." },
+  { "role": "user", "content": "Hello" }
+]
 ```
 
-Writable config keys: `api_key`, `output`, `timeout`, `default_image_model`, `default_chat_model`, `multimodal_base_url`, `llm_base_url`
+**`--output json` (non-streaming single-turn):**
+
+```json
+{
+  "id": "abc123",
+  "model": "deepseek-v3-0324",
+  "choices": [
+    {
+      "message": { "role": "assistant", "content": "Hello! How can I help?" },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": { "prompt_tokens": 4, "completion_tokens": 9, "total_tokens": 13 }
+}
+```
+
+**`chat models --output json`:**
+
+```json
+{ "models": ["deepseek-v3-0324", "deepseek-r1", "claude-sonnet-4-6", "..."] }
+```
+
+---
 
 ## Async Task Flow
 
 For long-running generation tasks, use `--async` to get the task ID immediately, then poll separately:
 
 ```bash
-# Step 1: submit and get task ID
+# Step 1: submit and capture task ID
 RESULT=$(sac generate image --prompt "a cat" --async --quiet --output json)
 TASK_ID=$(echo "$RESULT" | node -e "process.stdin.setEncoding('utf8'); let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>console.log(JSON.parse(d).task_id))")
 
@@ -350,7 +502,7 @@ Or use `--out-dir` to download assets directly after polling completes:
 
 ```bash
 sac generate image --prompt "a cat" --out-dir ./output --output json
-# returns: { "task_id": "...", "saved": ["/path/to/output/image_001.webp"] }
+# returns: { "task_id": "...", "saved": ["./output/image_001.webp"] }
 ```
 
 ## Piping Patterns
@@ -362,20 +514,17 @@ sac generate image --prompt "a cat" --quiet --output json \
   | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(d.urls[0])"
 ```
 
-The JSON output shape for `generate image` (without `--out-dir`):
-
-```json
-{ "task_id": "...", "urls": ["https://..."] }
-```
-
-With `--out-dir`: `{ "task_id": "...", "saved": ["/absolute/path/to/file"] }`
-
-With `--async`: `{ "task_id": "...", "status": "in_progress" }`
-
 Send chat messages via stdin:
 
 ```bash
 echo '[{"role":"user","content":"hello"}]' | sac chat --messages-file - --quiet --output json
+```
+
+Get first model matching a filter:
+
+```bash
+sac chat models --filter deepseek --output json --quiet \
+  | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(d.models[0])"
 ```
 
 ## Exit Codes
@@ -384,7 +533,7 @@ echo '[{"role":"user","content":"hello"}]' | sac chat --messages-file - --quiet 
 |---|---|
 | 0 | Success |
 | 1 | General error |
-| 2 | Usage / bad arguments |
+| 2 | Usage / missing required flag |
 | 3 | Authentication failed |
 | 4 | Quota exceeded |
 | 5 | Timeout |
@@ -400,3 +549,11 @@ HTTPS_PROXY=http://127.0.0.1:9990 HTTP_PROXY=http://127.0.0.1:9990 sac generate 
 ```
 
 Lowercase `https_proxy` is ignored by Node.js `fetch`.
+
+## Configuration Precedence
+
+```
+--api-key flag  >  SAC_API_KEY env  >  ~/.sac/config.json  >  (error: not authenticated)
+--output flag   >  SAC_OUTPUT env   >  config file         >  auto-detect by TTY
+--timeout flag  >  SAC_TIMEOUT env  >  config file         >  300 seconds
+```
