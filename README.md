@@ -56,17 +56,22 @@ If an agent does not use `CLAUDE.md`, use:
 
 ## Fast Install
 
-From a cloned repository:
+From the repository root (the directory containing `install.sh`):
 
 ```bash
 bash install.sh
 source ./.sac-env
+sac --version
 ```
 
-Default install target is `~/.local/bin`, so no elevated privileges are required.
-If `sac` is still not on `PATH`, use the absolute path recorded in `.sac-bin-path`.
+`source ./.sac-env` only affects the current shell process. If `sac` is still not found after sourcing, use the absolute path written to `.sac-bin-path`:
 
-If you explicitly want a system-wide location, choose it yourself:
+```bash
+SAC_BIN="$(cat .sac-bin-path)"
+"$SAC_BIN" --version
+```
+
+Default install target is `~/.local/bin`, so no elevated privileges are required. To choose a different location:
 
 ```bash
 SAC_INSTALL_DIR=/usr/local/bin bash install.sh

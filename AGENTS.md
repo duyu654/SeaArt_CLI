@@ -6,11 +6,18 @@ Agent entrypoint for the binary-only public mirror of `sac`, the SeaArt CLI.
 
 1. Read this file first
 2. Read `SKILL.md`
-3. Run:
+3. Run from the repository root:
 
 ```bash
 bash install.sh
 source ./.sac-env
+```
+
+`source ./.sac-env` only affects the current shell process. If `sac` is still not found after sourcing, use the absolute path:
+
+```bash
+SAC_BIN="$(cat .sac-bin-path)"
+"$SAC_BIN" --version
 ```
 
 4. Verify:

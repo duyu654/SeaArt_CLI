@@ -6,11 +6,18 @@ This repository is a binary-only public mirror for `sac`, the SeaArt CLI.
 
 1. Read this file first
 2. Read `SKILL.md`
-3. Run:
+3. Run from the repository root:
 
 ```bash
 bash install.sh
 source ./.sac-env
+```
+
+`source ./.sac-env` only affects the current shell process. If `sac` is still not found after sourcing, use the absolute path written by the installer:
+
+```bash
+SAC_BIN="$(cat .sac-bin-path)"
+"$SAC_BIN" --version
 ```
 
 4. Verify:
@@ -45,18 +52,24 @@ When writing shell tool calls inside this session, prefer the absolute path from
 
 ## Claude Code Hooks
 
-Claude Code hooks let you run `sac` automatically before or after tool calls. Add these to your project's `.claude/settings.json`:
+Claude Code hooks let you run shell commands automatically before or after tool calls. If you want `sac` to participate in a hook workflow, use the absolute path from `.sac-bin-path` to ensure it is always found regardless of `PATH` state:
+
+```bash
+SAC_BIN="$(cat .sac-bin-path)"
+```
+
+Example `.claude/settings.json` hook that runs a `sac` command after every file write:
 
 ```json
 {
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Write|Edit|NotebookEdit",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "sac generate image --prompt \"$(git log -1 --pretty=%s)\" --quiet --async"
+            "command": "\"$(cat /path/to/repo/.sac-bin-path)\" auth status --check"
           }
         ]
       }
@@ -65,17 +78,7 @@ Claude Code hooks let you run `sac` automatically before or after tool calls. Ad
 }
 ```
 
-More commonly, use hooks to pipe generated asset URLs into your workflow:
-
-```json
-{
-  "hooks": {
-    "PreToolUse": []
-  }
-}
-```
-
-Hooks run in the environment Claude Code inherits — if `sac` is not on the system `PATH`, use the absolute path recorded in `.sac-bin-path`.
+Replace `/path/to/repo` with the actual path to the cloned mirror repository. Hooks run in the environment Claude Code inherits — `PATH` mutations from `source .sac-env` do not carry over into hook processes.
 
 ## Claude Operating Rules
 
