@@ -1,7 +1,7 @@
 {
-  "version": "0.4.9",
-  "tag": "v0.4.9",
+  "version": "0.4.10",
+  "tag": "v0.4.10",
   "source_branch": "main",
-  "source_commit": "11a6152061f73dae3bf2eee2f5dbec7daa74d2d3",
+  "source_commit": "89ced12dad7e3a09b0d377755b30451bb8c6c5ff",
   "github_repo": "duyu654/SeaArt_CLI"
 }

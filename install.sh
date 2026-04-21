@@ -2,8 +2,9 @@
 set -euo pipefail
 
 REPO="duyu654/SeaArt_CLI"
-VERSION="0.4.9"
+VERSION="0.4.10"
 TAG="v${VERSION}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 log() {
   printf '%s\n' "$*"
@@ -215,6 +216,8 @@ main() {
     fail "Cannot install to $dest. Choose a writable install directory, or explicitly rerun with the privileges you want."
   fi
   chmod +x "$dest"
+  printf '%s\n' "$dest" > "$SCRIPT_DIR/.sac-bin-path"
+  printf 'export PATH="%s:$PATH"\n' "$install_dir" > "$SCRIPT_DIR/.sac-env"
 
   log "Installed to $dest"
   "$dest" --version
@@ -232,6 +235,9 @@ main() {
   else
     log "Installed without elevated privileges."
   fi
+  log "Generated $SCRIPT_DIR/.sac-bin-path"
+  log "Generated $SCRIPT_DIR/.sac-env"
+  log "Run: source ./.sac-env"
 }
 
 main "$@"
