@@ -1,62 +1,21 @@
 # sac
 
-Binary-only public mirror for SeaArt CLI.
+Binary-only public mirror for SeaArt CLI — image, video, audio, 3D generation and LLM chat from the terminal or from an agent.
 
-This repository intentionally does **not** include source code. The full source repository is maintained separately. This public mirror only ships:
+This repository does **not** include source code. It ships:
 
-- onboarding docs for humans and agents
-- `CLAUDE.md` as the Claude Code entrypoint
-- `AGENTS.md` as the generic agent entrypoint
-- `SKILL.md` as the operational command reference
-- `install.sh` for no-brainer installation
-- GitHub Releases for binary distribution
+- `CLAUDE.md` — agent entry point and operating rules
+- `SKILL.md` — complete command reference (flags, output shapes, models)
+- `install.sh` — zero-dependency installer
+- GitHub Releases — platform binaries
 
-## For Claude Code
+---
 
-If an agent receives this repository URL, the expected flow is:
+## For Agents
 
-1. Read `CLAUDE.md`
-2. Read `SKILL.md`
-3. Run `bash install.sh`
-4. Run `source ./.sac-env`
-5. Verify with `sac --version` and `sac auth status`
+Read this first, then follow the steps below. The authoritative command reference is `SKILL.md`.
 
-`CLAUDE.md` is the entrypoint. `SKILL.md` is the detailed usage contract.
-
-If `sac` is not yet on `PATH` after sourcing `.sac-env`, use the absolute path written to `.sac-bin-path`:
-
-```bash
-SAC_BIN="$(cat .sac-bin-path)"
-"$SAC_BIN" --version
-```
-
-## For Other Agents
-
-If an agent does not use `CLAUDE.md`, use:
-
-1. Read `AGENTS.md`
-2. Read `SKILL.md`
-3. Run `bash install.sh`
-4. Run `source ./.sac-env`
-5. Verify with `sac --version` and `sac auth status`
-
-`AGENTS.md` is the entrypoint. `SKILL.md` is the detailed usage contract.
-
-## What sac Can Do
-
-`sac` is a SeaArt CLI for:
-
-- image generation and image editing
-- video generation and video enhancement
-- audio generation
-- 3D generation
-- task result querying
-- LLM chat and model listing
-- API key login, status check, and config management
-
-## Fast Install
-
-From the repository root (the directory containing `install.sh`):
+**Step 1 — Install:**
 
 ```bash
 bash install.sh
@@ -64,130 +23,115 @@ source ./.sac-env
 sac --version
 ```
 
-`source ./.sac-env` only affects the current shell process. If `sac` is still not found after sourcing, use the absolute path written to `.sac-bin-path`:
+`source ./.sac-env` only affects the current shell process. If `sac` is still not found, use the absolute path the installer recorded:
 
 ```bash
 SAC_BIN="$(cat .sac-bin-path)"
 "$SAC_BIN" --version
 ```
 
-Default install target is `~/.local/bin`, so no elevated privileges are required. To choose a different location:
+**Step 2 — Authenticate** (required before any generate or chat command):
+
+```bash
+sac auth login --api-key sa-xxxxxxxx
+# or export SAC_API_KEY=sa-xxxxxxxx
+sac auth status --output json
+```
+
+Expected output when authenticated:
+
+```json
+{ "authenticated": true, "key": "sa-a...xxxx", "source": "config file" }
+```
+
+**Step 3 — Use the agent baseline for all structured commands:**
+
+```bash
+sac --non-interactive --quiet --output json <command> [flags]
+```
+
+Rules:
+- Never run bare `sac chat` — always pass `--message "..."`
+- `--output json` is rejected by `chat --stream`, interactive `chat`, `generate task --output-only-url`, and `update`
+- If `sac` is not on `PATH`, use `"$(cat .sac-bin-path)"` instead
+- Full flag tables, output shapes, and model lists are in `SKILL.md`
+
+If you are Claude Code, read `CLAUDE.md` after this for hooks guidance and Claude-specific operating rules.
+
+---
+
+## For Humans
+
+### Fast Install
+
+From the repository root:
+
+```bash
+bash install.sh
+source ./.sac-env
+sac --version
+```
+
+Default install target is `~/.local/bin` (no elevated privileges). To choose a different location:
 
 ```bash
 SAC_INSTALL_DIR=/usr/local/bin bash install.sh
 ```
 
-## Install
+### Manual Install
 
-### macOS Apple Silicon
-
-```bash
-curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.11/sac-0.4.11-darwin-arm64
-chmod +x sac
-mkdir -p "$HOME/.local/bin"
-mv sac "$HOME/.local/bin/sac"
-```
-
-### macOS Intel
+#### macOS Apple Silicon
 
 ```bash
-curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.11/sac-0.4.11-darwin-x64
-chmod +x sac
-mkdir -p "$HOME/.local/bin"
-mv sac "$HOME/.local/bin/sac"
+curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.12/sac-0.4.12-darwin-arm64
+chmod +x sac && mkdir -p "$HOME/.local/bin" && mv sac "$HOME/.local/bin/sac"
 ```
 
-### Linux x64
+#### macOS Intel
 
 ```bash
-curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.11/sac-0.4.11-linux-x64
-chmod +x sac
-mkdir -p "$HOME/.local/bin"
-mv sac "$HOME/.local/bin/sac"
+curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.12/sac-0.4.12-darwin-x64
+chmod +x sac && mkdir -p "$HOME/.local/bin" && mv sac "$HOME/.local/bin/sac"
 ```
 
-### Windows x64
-
-Download `sac-0.4.11-windows-x64.exe` from the release page and place it somewhere in your `PATH`, or rename it to `sac.exe`.
-
-## Verify
+#### Linux x64
 
 ```bash
-sac --version
-sac auth status
-sac auth status --check
+curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.12/sac-0.4.12-linux-x64
+chmod +x sac && mkdir -p "$HOME/.local/bin" && mv sac "$HOME/.local/bin/sac"
 ```
 
-## Authentication
+#### Windows x64
+
+Download `sac-0.4.12-windows-x64.exe` from the release page and place it somewhere in your `PATH`.
+
+### Authentication
 
 ```bash
 sac auth login --api-key sa-xxxxxxxx
+sac auth status --check
 ```
 
-Or pass it via environment variable (useful in CI and agent environments):
-
-```bash
-export SAC_API_KEY=sa-xxxxxxxx
-```
-
-`sac auth login` validates the key before saving it to `~/.sac/config.json`.
-
-## Environment Variables
-
-| Variable | Purpose |
-|---|---|
-| `SAC_API_KEY` | API key — overrides the config file |
-| `SAC_OUTPUT` | Force output format: `json` or `text` |
-| `SAC_TIMEOUT` | Request timeout in seconds (default: `300`) |
-| `SAC_MULTIMODAL_BASE_URL` | Override the multimodal gateway URL |
-| `SAC_LLM_BASE_URL` | Override the LLM gateway URL |
-| `HTTPS_PROXY` / `HTTP_PROXY` | HTTP proxy (uppercase required for Node.js `fetch`) |
-
-## Quick Start
+### Quick Start
 
 ```bash
 sac generate image --prompt "a cat in space"
 sac generate video --prompt "a fox in snow"
 sac generate audio --prompt "epic orchestral theme"
 sac generate 3d --prompt "a stylized toy robot"
+sac chat --message "Hello"
 ```
 
-## For Agents
-
-Read `CLAUDE.md` or `AGENTS.md` first, then `SKILL.md`.
-
-Recommended baseline for structured commands:
-
-```bash
-sac --non-interactive --quiet --output json <command> [flags]
-```
-
-Some modes are intentionally text-only and reject `--output json`, including `chat --stream`, interactive `chat`, `generate task --output-only-url`, and `update`.
-
-For long-running generation tasks, use `--async` to return a task ID immediately, then poll:
-
-```bash
-TASK_ID=$(sac generate image --prompt "..." --async --quiet --output json | node -e "process.stdin.setEncoding('utf8'); let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>console.log(JSON.parse(d).task_id))")
-sac generate task "$TASK_ID" --output json
-```
+---
 
 ## Mirror Metadata
 
-- `VERSION`: mirrored CLI version
-- `SOURCE_COMMIT`: GitLab source commit used for this public mirror
-- `MIRROR.json`: machine-readable mirror metadata
-- `.sac-bin-path`: generated by installer, contains the absolute installed binary path
-- `.sac-env`: generated by installer, exports the required `PATH`
+Current release: [`v0.4.12`](https://github.com/duyu654/SeaArt_CLI/releases/tag/v0.4.12)
 
-Current public release tag: `v0.4.11`
-
-Download binaries from:
-
-[https://github.com/duyu654/SeaArt_CLI/releases/tag/v0.4.11](https://github.com/duyu654/SeaArt_CLI/releases/tag/v0.4.11)
-
-## Document Roles
-
-- `README.md`: public overview, install, and quick start
-- `CLAUDE.md`: Claude Code-specific entry flow and hooks guidance
-- `AGENTS.md`: generic agent entry flow
-- `SKILL.md`: command semantics, output conventions, defaults, and agent-safe patterns
+| File | Contents |
+|---|---|
+| `VERSION` | CLI version of this mirror |
+| `SOURCE_COMMIT` | GitLab source commit |
+| `MIRROR.json` | Machine-readable mirror metadata |
+| `.sac-bin-path` | Generated by installer — absolute binary path |
+| `.sac-env` | Generated by installer — `PATH` export |
