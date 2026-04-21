@@ -25,11 +25,11 @@ Mirror metadata:
 - `SOURCE_COMMIT`: GitLab source commit used for this public mirror
 - `MIRROR.json`: machine-readable mirror metadata
 
-Current public release tag: `v0.4.8`
+Current public release tag: `v0.4.9`
 
 Download binaries from:
 
-[https://github.com/duyu654/SeaArt_CLI/releases/tag/v0.4.8](https://github.com/duyu654/SeaArt_CLI/releases/tag/v0.4.8)
+[https://github.com/duyu654/SeaArt_CLI/releases/tag/v0.4.9](https://github.com/duyu654/SeaArt_CLI/releases/tag/v0.4.9)
 
 ## Fast Install
 
@@ -39,35 +39,46 @@ From a cloned repository:
 bash install.sh
 ```
 
+Default install target is `~/.local/bin`, so no elevated privileges are required.
+
+If you explicitly want a system-wide location, choose it yourself:
+
+```bash
+SAC_INSTALL_DIR=/usr/local/bin bash install.sh
+```
+
 ## Install
 
 ### macOS Apple Silicon
 
 ```bash
-curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.8/sac-0.4.8-darwin-arm64
+curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.9/sac-0.4.9-darwin-arm64
 chmod +x sac
-sudo mv sac /usr/local/bin/sac
+mkdir -p "$HOME/.local/bin"
+mv sac "$HOME/.local/bin/sac"
 ```
 
 ### macOS Intel
 
 ```bash
-curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.8/sac-0.4.8-darwin-x64
+curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.9/sac-0.4.9-darwin-x64
 chmod +x sac
-sudo mv sac /usr/local/bin/sac
+mkdir -p "$HOME/.local/bin"
+mv sac "$HOME/.local/bin/sac"
 ```
 
 ### Linux x64
 
 ```bash
-curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.8/sac-0.4.8-linux-x64
+curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.9/sac-0.4.9-linux-x64
 chmod +x sac
-sudo mv sac /usr/local/bin/sac
+mkdir -p "$HOME/.local/bin"
+mv sac "$HOME/.local/bin/sac"
 ```
 
 ### Windows x64
 
-Download `sac-0.4.8-windows-x64.exe` from the release page and place it somewhere in your `PATH`, or rename it to `sac.exe`.
+Download `sac-0.4.9-windows-x64.exe` from the release page and place it somewhere in your `PATH`, or rename it to `sac.exe`.
 
 ## Verify
 
