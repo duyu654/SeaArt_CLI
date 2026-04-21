@@ -7,7 +7,13 @@ description: Use sac (SeaArt CLI) to generate images, video, audio, and 3D asset
 
 ## Install
 
-Download the correct binary from the GitHub Releases page, place it in your `PATH`, and verify:
+From the repository root:
+
+```bash
+bash install.sh
+```
+
+Or download the correct binary from the GitHub Releases page manually, place it in your `PATH`, and verify:
 
 ```bash
 sac --version

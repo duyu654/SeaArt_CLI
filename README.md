@@ -6,20 +6,38 @@ This repository intentionally does **not** include source code. The full source 
 
 - basic usage docs
 - `SKILL.md` for agent usage
+- `install.sh` for no-brainer installation
 - GitHub Releases for binary distribution
 
-## Files
+## For Claude Code
+
+If an agent receives this repository URL, the expected flow is:
+
+1. Read `SKILL.md`
+2. Run `bash install.sh`
+3. Verify with `sac --version` and `sac auth status`
+
+## Mirror Metadata
 
 Mirror metadata:
 
 - `VERSION`: mirrored CLI version
 - `SOURCE_COMMIT`: GitLab source commit used for this public mirror
 - `MIRROR.json`: machine-readable mirror metadata
+
 Current public release tag: `v0.4.8`
 
 Download binaries from:
 
 [https://github.com/duyu654/SeaArt_CLI/releases/tag/v0.4.8](https://github.com/duyu654/SeaArt_CLI/releases/tag/v0.4.8)
+
+## Fast Install
+
+From a cloned repository:
+
+```bash
+bash install.sh
+```
 
 ## Install
 
