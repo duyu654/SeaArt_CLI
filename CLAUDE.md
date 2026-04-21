@@ -1,6 +1,6 @@
 # sac for Claude Code
 
-This repository is a binary-only public mirror for `sac`.
+This repository is a binary-only public mirror for `sac`, the SeaArt CLI.
 
 ## Required Flow
 
@@ -27,31 +27,106 @@ sac auth login --api-key sa-xxxxxxxx
 sac auth status --check
 ```
 
+## PATH Handling
+
+`install.sh` writes two files:
+
+- `.sac-bin-path` — absolute path to the installed binary (e.g. `/root/.local/bin/sac`)
+- `.sac-env` — a one-line `export PATH=...` statement
+
+After `source ./.sac-env`, `sac` should be available on `PATH`. If it is still not found, invoke the binary via the absolute path:
+
+```bash
+SAC_BIN="$(cat .sac-bin-path)"
+"$SAC_BIN" --version
+```
+
+When writing shell tool calls inside this session, prefer the absolute path from `.sac-bin-path` over bare `sac` if there is any doubt about `PATH` propagation.
+
+## Claude Code Hooks
+
+Claude Code hooks let you run `sac` automatically before or after tool calls. Add these to your project's `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sac generate image --prompt \"$(git log -1 --pretty=%s)\" --quiet --async"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+More commonly, use hooks to pipe generated asset URLs into your workflow:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": []
+  }
+}
+```
+
+Hooks run in the environment Claude Code inherits — if `sac` is not on the system `PATH`, use the absolute path recorded in `.sac-bin-path`.
+
 ## Claude Operating Rules
 
-- Prefer `sac --non-interactive --quiet --output json <command> [flags]` for structured commands
-- Do not use `--output json` with text-only modes such as `chat --stream`, interactive `chat`, `generate task --output-only-url`, or `update`
-- Never run bare `sac chat` from automation; use `sac chat --message "..."`
-- When `sac` is still unavailable on `PATH`, invoke the absolute path stored in `.sac-bin-path`
-- `SKILL.md` is the command contract; do not guess flags or output behavior from examples alone
+- Always prefer `sac --non-interactive --quiet --output json <command> [flags]` for structured output
+- Do not use `--output json` with text-only modes: `chat --stream`, interactive `chat`, `generate task --output-only-url`, `update`
+- Never run bare `sac chat` from automation — always pass `--message "..."`
+- When `sac` is not on `PATH`, use the absolute binary path in `.sac-bin-path`
+- Treat `SKILL.md` as the authoritative command contract; do not guess flags or output shape from examples alone
+- For long-running generation tasks, prefer `--async` to get the task ID immediately, then poll with `sac generate task <id>`
+- Pass `SAC_API_KEY` as an environment variable when you cannot guarantee `~/.sac/config.json` is present in the execution environment
+
+## Environment Variables
+
+| Variable | Purpose |
+|---|---|
+| `SAC_API_KEY` | API key (overrides config file) |
+| `SAC_OUTPUT` | Force output format (`json` or `text`) |
+| `SAC_TIMEOUT` | Request timeout in seconds (default: 300) |
+| `SAC_MULTIMODAL_BASE_URL` | Override multimodal gateway URL |
+| `SAC_LLM_BASE_URL` | Override LLM gateway URL |
+| `HTTPS_PROXY` / `HTTP_PROXY` | HTTP proxy (uppercase required for Node.js fetch) |
 
 ## What sac Covers
 
-- `sac generate image`
-- `sac generate video`
-- `sac generate audio`
-- `sac generate 3d`
-- `sac generate task`
-- `sac chat`
-- `sac auth`
-- `sac config`
+- `sac generate image` — text-to-image, image-to-image
+- `sac generate video` — text-to-video, image-to-video, video enhancement
+- `sac generate audio` — music and sound generation
+- `sac generate 3d` — text-to-3D, image-to-3D
+- `sac generate task` — poll or fetch a task result by ID
+- `sac chat` — single-turn or interactive LLM chat
+- `sac chat models` — list available LLM models
+- `sac chat set-model` — persist default LLM model
+- `sac auth login/status/logout` — API key management
+- `sac config show/set` — view and write config values
+
+## Exit Codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | General error |
+| 2 | Bad arguments or usage |
+| 3 | Authentication failed |
+| 4 | Quota exceeded |
+| 5 | Timeout |
+| 6 | Network or validation uncertainty |
+| 10 | Content filtered |
 
 ## Notes
 
 - Source code is intentionally not included in this repository
 - `SKILL.md` is usage documentation, not a Claude-native skill installation mechanism
-- `install.sh` writes:
-  - `.sac-bin-path`
-  - `.sac-env`
-
-If `sac` is still unavailable on `PATH`, invoke the absolute path stored in `.sac-bin-path`.
+- `install.sh` writes `.sac-bin-path` and `.sac-env`
+- The binary is a self-contained Node.js bundle; no `npm install` is required after installation
