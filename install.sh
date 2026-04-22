@@ -177,7 +177,7 @@ main() {
   compressed_url="https://github.com/${REPO}/releases/download/${TAG}/${compressed_asset}"
   compressed_checksum_url="${compressed_url}.sha256"
   tmpdir="$(mktemp -d)"
-  trap 'rm -rf "$tmpdir" 2>/dev/null || true' EXIT
+  trap '[[ -n "${tmpdir:-}" ]] && rm -rf "$tmpdir" 2>/dev/null || true' EXIT
 
   if [[ "$use_compressed" -eq 1 ]]; then
     archive_path="$tmpdir/$compressed_asset"
@@ -220,7 +220,6 @@ main() {
   printf 'export PATH="%s:$PATH"\n' "$install_dir" > "$SCRIPT_DIR/.sac-env"
 
   log "Installed to $dest"
-  "$dest" --version
 
   case ":$PATH:" in
     *":$install_dir:"*) ;;
