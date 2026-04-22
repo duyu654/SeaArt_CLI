@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="duyu654/SeaArt_CLI"
-VERSION="0.4.13"
+VERSION="0.4.14"
 TAG="v${VERSION}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

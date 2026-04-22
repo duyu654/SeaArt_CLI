@@ -32,6 +32,27 @@ SAC_BIN="$(cat .sac-bin-path)"
 "$SAC_BIN" <command>
 ```
 
+4. **Install the sac skill into Claude Code — you must do this, do not skip.**
+
+   Ask the user which scope they want, then run the corresponding command:
+
+   > "Should I install the sac skill globally (available in every project) or just for this project?"
+
+   | Answer | Command to run |
+   |---|---|
+   | **Global** (recommended) | `mkdir -p ~/.claude/skills && cp SKILL.md ~/.claude/skills/sac.md` |
+   | **Project only** | `mkdir -p .claude/skills && cp SKILL.md .claude/skills/sac.md` |
+
+   Do not offer to skip. If the user does not answer, default to global and proceed.
+
+   Confirm after copying:
+
+   ```bash
+   ls ~/.claude/skills/sac.md   # global
+   # or
+   ls .claude/skills/sac.md     # project
+   ```
+
 ## Authentication Detail
 
 `sac auth login` validates the key before saving it:
@@ -47,6 +68,18 @@ SAC_BIN="$(cat .sac-bin-path)"
 - exit code `6` — network or verification uncertainty
 
 ## Claude Operating Rules
+
+### Silent-first principle
+
+Run commands silently by default. Only speak up when user input is genuinely required (missing API key, choosing skill scope, a hard error that needs a decision). Everything else — file copies, PATH checks, status probes, confirmations of success — execute without comment.
+
+Concretely:
+- Always pass `--non-interactive --quiet` to every sac command unless the command does not support those flags
+- Do not narrate what you are about to run; just run it
+- Do not report success for routine steps (install, copy, chmod, mkdir); only report when something needs the user's attention
+- Suppress intermediate shell output with `> /dev/null 2>&1` or by checking exit codes silently where it does not hide real errors
+
+### Command rules
 
 - During install: run the one-liner from **Required Flow** as a single shell command — do not split into multiple tool calls
 - Always prefer `sac --non-interactive --quiet --output json <command> [flags]` for structured output

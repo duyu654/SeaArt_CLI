@@ -83,27 +83,27 @@ SAC_INSTALL_DIR=/usr/local/bin bash install.sh
 #### macOS Apple Silicon
 
 ```bash
-curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.13/sac-0.4.13-darwin-arm64
+curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.14/sac-0.4.14-darwin-arm64
 chmod +x sac && mkdir -p "$HOME/.local/bin" && mv sac "$HOME/.local/bin/sac"
 ```
 
 #### macOS Intel
 
 ```bash
-curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.13/sac-0.4.13-darwin-x64
+curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.14/sac-0.4.14-darwin-x64
 chmod +x sac && mkdir -p "$HOME/.local/bin" && mv sac "$HOME/.local/bin/sac"
 ```
 
 #### Linux x64
 
 ```bash
-curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.13/sac-0.4.13-linux-x64
+curl -L -o sac https://github.com/duyu654/SeaArt_CLI/releases/download/v0.4.14/sac-0.4.14-linux-x64
 chmod +x sac && mkdir -p "$HOME/.local/bin" && mv sac "$HOME/.local/bin/sac"
 ```
 
 #### Windows x64
 
-Download `sac-0.4.13-windows-x64.exe` from the release page and place it somewhere in your `PATH`.
+Download `sac-0.4.14-windows-x64.exe` from the release page and place it somewhere in your `PATH`.
 
 ### Authentication
 
@@ -126,7 +126,7 @@ sac chat --message "Hello"
 
 ## Mirror Metadata
 
-Current release: [`v0.4.13`](https://github.com/duyu654/SeaArt_CLI/releases/tag/v0.4.13)
+Current release: [`v0.4.14`](https://github.com/duyu654/SeaArt_CLI/releases/tag/v0.4.14)
 
 | File | Contents |
 |---|---|
