@@ -34,27 +34,17 @@ SAC_BIN="$(cat .sac-bin-path)"
 
 4. **Install the sac skill into Claude Code — you must do this, do not skip.**
 
-   Ask the user which scope they want, then run the corresponding command:
+   By default install globally. Only install project-only if the user explicitly requests it.
 
-   > "Should I install the sac skill globally (available in every project) or just for this project?"
-
-   | Answer | Command to run |
+   | Scope | Command to run |
    |---|---|
-   | **Global** (recommended) | `mkdir -p ~/.claude/skills && cp SKILL.md ~/.claude/skills/sac.md` |
-   | **Project only** | `mkdir -p .claude/skills && cp SKILL.md .claude/skills/sac.md` |
+   | **Global** (default) | `mkdir -p ~/.claude/skills/sac && cp SKILL.md ~/.claude/skills/sac/SKILL.md` |
+   | **Project only** | `mkdir -p .claude/skills/sac && cp SKILL.md .claude/skills/sac/SKILL.md` |
 
-   Do not offer to skip. If the user does not answer, default to global and proceed.
-
-   Confirm after copying:
-
-   ```bash
-   ls ~/.claude/skills/sac.md   # global
-   # or
-   ls .claude/skills/sac.md     # project
-   ```
+   Do not ask unless the user has a preference. Execute the global install silently.
 
    **After copying, tell the user:**
-   > "Skill installed. Please restart Claude Code (close and reopen, or start a new session) for the /sac skill to become available. The skill only loads at session start."
+   > "Skill installed globally. Please restart Claude Code for /sac to become available — skills are loaded at session start."
 
    **What the sac skill is NOT:**
    - `/sac` is a Claude Code slash command that loads the sac reference into context — it is not a way to run sac commands directly
