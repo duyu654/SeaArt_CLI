@@ -221,10 +221,42 @@ main() {
 
   log "Installed to $dest"
 
+  # Persist install_dir to shell rc files so sac survives new shell sessions
   case ":$PATH:" in
     *":$install_dir:"*) ;;
     *)
-      log "Run to add to PATH: export PATH=\"$install_dir:\$PATH\""
+      local export_line="export PATH=\"${install_dir}:\$PATH\""
+      local marker="# added by sac installer"
+      local rc_files=()
+      local current_shell
+      current_shell="$(basename "${SHELL:-sh}")"
+
+      case "$current_shell" in
+        zsh)
+          [[ -f "$HOME/.zshrc" ]]    && rc_files+=("$HOME/.zshrc")
+          [[ -f "$HOME/.zprofile" ]] && rc_files+=("$HOME/.zprofile")
+          ;;
+        bash)
+          [[ -f "$HOME/.bashrc" ]]       && rc_files+=("$HOME/.bashrc")
+          [[ -f "$HOME/.bash_profile" ]] && rc_files+=("$HOME/.bash_profile")
+          [[ -f "$HOME/.profile" ]]      && rc_files+=("$HOME/.profile")
+          ;;
+        *)
+          [[ -f "$HOME/.profile" ]] && rc_files+=("$HOME/.profile")
+          ;;
+      esac
+
+      [[ ${#rc_files[@]} -eq 0 ]] && rc_files+=("$HOME/.profile")
+
+      local wrote_any=0
+      for rc in "${rc_files[@]}"; do
+        if grep -qF "$install_dir" "$rc" 2>/dev/null; then
+          continue
+        fi
+        printf '\n%s\n%s\n' "$marker" "$export_line" >> "$rc"
+        wrote_any=1
+      done
+      [[ "$wrote_any" -eq 1 ]] && log "To use sac in this session: export PATH=\"${install_dir}:\$PATH\""
       ;;
   esac
 }
