@@ -230,6 +230,8 @@ main() {
       local rc_files=()
       local current_shell
       current_shell="$(basename "${SHELL:-sh}")"
+      local os_type
+      os_type="$(uname -s)"
 
       case "$current_shell" in
         zsh)
@@ -257,6 +259,23 @@ main() {
         wrote_any=1
       done
       [[ "$wrote_any" -eq 1 ]] && log "To use sac in this session: export PATH=\"${install_dir}:\$PATH\""
+
+      # On Windows (Git Bash / MSYS2 / Cygwin), also register via setx so
+      # CMD and PowerShell pick up the directory in new windows.
+      case "$os_type" in
+        MINGW*|MSYS*|CYGWIN*)
+          local win_dir
+          win_dir="$(cygpath -w "$install_dir" 2>/dev/null || echo "$install_dir")"
+          if has_cmd setx; then
+            local current_win_path
+            current_win_path="$(cmd.exe /c 'echo %PATH%' 2>/dev/null || true)"
+            case "$current_win_path" in
+              *"$win_dir"*) ;;
+              *) setx PATH "%PATH%;${win_dir}" > /dev/null 2>&1 || true ;;
+            esac
+          fi
+          ;;
+      esac
       ;;
   esac
 }
