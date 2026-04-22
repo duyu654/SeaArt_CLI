@@ -53,6 +53,14 @@ SAC_BIN="$(cat .sac-bin-path)"
    ls .claude/skills/sac.md     # project
    ```
 
+   **After copying, tell the user:**
+   > "Skill installed. Please restart Claude Code (close and reopen, or start a new session) for the /sac skill to become available. The skill only loads at session start."
+
+   **What the sac skill is NOT:**
+   - `/sac` is a Claude Code slash command that loads the sac reference into context — it is not a way to run sac commands directly
+   - Users do not type `sac generate image ...` as a command to Claude; they describe what they want in plain language and Claude invokes the sac binary on their behalf
+   - After the skill is loaded in a new session, Claude will automatically use sac when the user asks to generate images, chat with an LLM, etc.
+
 ## Authentication Detail
 
 `sac auth login` validates the key before saving it:
