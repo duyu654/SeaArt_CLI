@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="duyu654/SeaArt_CLI"
-VERSION="0.4.12"
+VERSION="0.4.13"
 TAG="v${VERSION}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -177,7 +177,7 @@ main() {
   compressed_url="https://github.com/${REPO}/releases/download/${TAG}/${compressed_asset}"
   compressed_checksum_url="${compressed_url}.sha256"
   tmpdir="$(mktemp -d)"
-  trap 'rm -rf "$tmpdir"' EXIT
+  trap 'rm -rf "$tmpdir" 2>/dev/null || true' EXIT
 
   if [[ "$use_compressed" -eq 1 ]]; then
     archive_path="$tmpdir/$compressed_asset"
@@ -225,19 +225,9 @@ main() {
   case ":$PATH:" in
     *":$install_dir:"*) ;;
     *)
-      log "Add this to your shell profile if needed:"
-      log "export PATH=\"$install_dir:\$PATH\""
+      log "Run to add to PATH: export PATH=\"$install_dir:\$PATH\""
       ;;
   esac
-
-  if [[ "$install_dir" != "$HOME/.local/bin" ]]; then
-    log "Custom install dir in use: $install_dir"
-  else
-    log "Installed without elevated privileges."
-  fi
-  log "Generated $SCRIPT_DIR/.sac-bin-path"
-  log "Generated $SCRIPT_DIR/.sac-env"
-  log "Run: source ./.sac-env"
 }
 
 main "$@"

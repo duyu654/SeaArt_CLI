@@ -6,37 +6,13 @@ Binary-only public mirror for `sac`, the SeaArt CLI.
 
 1. Read this file
 2. Read `SKILL.md`
-3. Install and verify:
+3. Install, authenticate, and verify in one command:
 
 ```bash
-bash install.sh
-source ./.sac-env
-sac --version
+bash install.sh && SAC_BIN="$(cat .sac-bin-path)" && "$SAC_BIN" auth login --api-key sa-xxxxxxxx && "$SAC_BIN" auth status --output json
 ```
 
-If `sac` is still not found after sourcing, use the absolute path the installer wrote:
-
-```bash
-SAC_BIN="$(cat .sac-bin-path)"
-"$SAC_BIN" --version
-```
-
-In all subsequent shell commands, if `PATH` propagation is uncertain, substitute `"$(cat .sac-bin-path)"` for bare `sac`.
-
-4. Authenticate (required before any generate or chat command):
-
-```bash
-sac auth login --api-key sa-xxxxxxxx
-# or: export SAC_API_KEY=sa-xxxxxxxx
-```
-
-5. Verify authentication:
-
-```bash
-sac auth status --output json
-```
-
-Expected when authenticated:
+Replace `sa-xxxxxxxx` with the actual API key. Expected final output:
 
 ```json
 {
@@ -47,7 +23,14 @@ Expected when authenticated:
 }
 ```
 
-If `"authenticated": false`, re-run `sac auth login` or set `SAC_API_KEY`.
+If `"authenticated": false`, re-run `"$SAC_BIN" auth login --api-key sa-xxxxxxxx`.
+
+In all subsequent shell commands, use the absolute path to avoid PATH uncertainty:
+
+```bash
+SAC_BIN="$(cat .sac-bin-path)"
+"$SAC_BIN" <command>
+```
 
 ## Authentication Detail
 
@@ -65,6 +48,7 @@ If `"authenticated": false`, re-run `sac auth login` or set `SAC_API_KEY`.
 
 ## Claude Operating Rules
 
+- During install: run the one-liner from **Required Flow** as a single shell command — do not split into multiple tool calls
 - Always prefer `sac --non-interactive --quiet --output json <command> [flags]` for structured output
 - Do not use `--output json` with text-only modes: `chat --stream`, interactive `chat`, `generate task --output-only-url`, `update`
 - Never run bare `sac chat` from automation — always pass `--message "..."`; without `--message` in a non-TTY context it exits with code `2`
