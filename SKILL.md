@@ -137,11 +137,39 @@ sac --non-interactive --quiet --output json <command> [flags]
 - `generate task --output-only-url`
 - `update`
 
-## Global Flags
+## Model Discovery Workflow
+
+**When the user asks about available models, or wants to call a specific model, always follow this workflow — do not guess model names or flags:**
+
+1. `sac model search` — discover models by type, provider, or modality
+2. `sac model get <model-id>` — inspect the Body Template and full field reference (capture silently into a variable)
+3. `sac generate submit --body-json '...'` — call the model with exact parameters from the template
+
+```bash
+# Example: user wants an image-to-video model from Kling
+sac model search --type i2v --provider kling --output json
+# → pick model id from results, e.g. kling_v3_i2v
+
+MODEL_SKILL=$(sac model get kling_v3_i2v)
+# → $MODEL_SKILL contains Body Template and Fields; never print it
+
+sac generate submit --body-json '{
+  "model": "kling_v3_i2v",
+  "dash_scope": true,
+  "moderation": true,
+  "input": [{"params": {"prompt": "...", "image": "https://..."}}],
+  "metadata": {}
+}'
+```
+
+Use `generate image / video / audio / 3d` directly only when the model and flags are already known with certainty. When in doubt, use the discovery workflow above.
+
+
 
 | Flag | Description |
 |---|---|
-| `--api-key <token>` | Bearer token (overrides env and config) |
+| `--api-key <token>` | Temporary bearer token for this command only; does not persist. Exception: `auth login --api-key` validates and saves it |
+| `--base-url <url>` | Temporary gateway base URL for this command only; does not persist |
 | `--output json\|text` | Force output format (default: auto-detect by TTY) |
 | `--timeout <seconds>` | Request timeout (default: 300) |
 | `--quiet` | Suppress spinners and info messages |
@@ -150,6 +178,17 @@ sac --non-interactive --quiet --output json <command> [flags]
 | `--non-interactive` | Fail on missing args instead of prompting |
 | `--async` | Return task ID immediately without polling |
 | `--no-color` | Disable ANSI colors |
+
+One-off temporary overrides:
+
+```bash
+sac --api-key sa-xxxxxxxx generate image --prompt "..."
+sac --base-url https://gateway.example.com generate image --prompt "..."
+```
+
+`auth login --api-key` is different: it validates the token and writes it to persisted config. The temporary meaning only applies to non-login commands.
+
+`--base-url` accepts a gateway root (`https://gateway.example.com`) or explicit `/model` / `/llm` base URLs. It only affects the current command and never writes config.
 
 ## Configuration
 
@@ -485,6 +524,132 @@ Default model: `deepseek-v3-0324`. Override with `--model` or persist with `sac 
 
 ---
 
+## generate submit
+
+Submit a raw request body directly to the generation API. Use this when `generate image/video/audio/3d` flags don't cover the params you need, or after `model get` to call a model with full parameter control.
+
+```bash
+sac generate submit --body-json '{"model":"kling_v3_i2v","dash_scope":true,"moderation":true,"input":[{"params":{"prompt":"...","image":"https://..."}}],"metadata":{}}'
+sac generate submit --body-json '{"model":"comfyuifast","input":[{"params":{"prompt":"1 girl"}}]}' --async
+sac generate submit --body-json '...' --out-dir ./output
+```
+
+**Flags:**
+
+| Flag | Type | Description |
+|---|---|---|
+| `--body-json <json>` | string | Complete request body as a JSON string (required) |
+| `--out-dir <dir>` | string | Download output files to this directory |
+| `--out-prefix <prefix>` | string | Filename prefix for downloads (default: `output`) |
+| `--async` | boolean | Return task ID immediately without polling |
+
+---
+
+## model search
+
+Search models (backed by Meilisearch).
+
+```bash
+sac model search                                           # list all
+sac model search --query kling                             # full-text search
+sac model search --input-modality image --output-modality video   # filter by i/o modality
+sac model search --type i2v                                # filter by tag abbreviation
+sac model search --type i2v --provider alibaba             # combined filter
+sac model search --query wan --input-modality image --output-modality video
+sac model search --output-modality audio                   # all audio output models
+sac model search --output json                             # machine-readable
+```
+
+**Filter flags (all repeatable for AND semantics):**
+
+| Flag | Values | Description |
+|---|---|---|
+| `--query <text>` | any | Full-text search across name, description, skill content |
+| `--input-modality <m>` | `text` `image` `video` `audio` | Input modality filter |
+| `--output-modality <m>` | `image` `video` `audio` `3d` | Output modality filter |
+| `--type <abbr>` | see table below | Tag abbreviation filter |
+| `--provider <name>` | `kling` `alibaba` `volces` `vidu` `pixverse` `tencent` `tripo3d` `google` `mureka` `seaart` | Provider filter |
+| `--limit <n>` | number | Max results (default: 20) |
+
+**Tag abbreviations (`--type`):**
+
+| Abbr | Full name | 中文 |
+|---|---|---|
+| `t2i` | text-to-image | 文生图 |
+| `i2i` | image-to-image | 图生图 |
+| `t2v` | text-to-video | 文生视频 |
+| `i2v` | image-to-video | 图生视频 |
+| `r2v` | reference-to-video | 参考生视频 |
+| `t2a` | text-to-audio | 文生音频 |
+| `a2a` | audio-to-audio | 音频生音频 |
+| `t23d` | text-to-3d | 文生3D |
+| `i23d` | image-to-3d | 图生3D |
+| `fx` | effects-template | 特效模板 |
+| `vext` | video-extension | 视频延长 |
+| `isr` | image-super-resolution | 图像超分 |
+| `vsr` | video-super-resolution | 视频超分 |
+| `vref` | video-reference | 视频参考 |
+| `lipsync` | lipsync | 对口型 |
+| `v2a` | video-to-audio | 视频配乐 |
+| `vedit` | video-editing | 视频编辑 |
+| `lyrics` | lyrics-generation | 歌词生成 |
+
+**`--output json` response:**
+
+```json
+{
+  "count": 12,
+  "results": [
+    {
+      "id": "kling_v3_i2v",
+      "name": "kling_v3_i2v",
+      "provider": "kling",
+      "description": "Kling AI V3 图生成视频接口",
+      "input": ["audio", "image", "text"],
+      "output": ["video"],
+      "media_type": "video",
+      "tags": ["image-to-video"],
+      "tags_abbr": ["i2v"]
+    }
+  ]
+}
+```
+
+---
+
+## model get
+
+Get the full SKILL.md for a model (body template + fields reference).
+
+**Silent-capture rule: always assign output to a variable — never print `model get` output to the terminal.**
+
+```bash
+MODEL_SKILL=$(sac model get kling_v3_i2v)
+MODEL_SKILL=$(sac model get alibaba_wanx26_t2v)
+```
+
+Returns raw SKILL.md content to stdout. Use with `generate submit` for full parameter control:
+
+```bash
+# Discover → inspect → call workflow
+sac model search --type i2v --provider kling --output json \
+  | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(d.results[0].name)"
+# → kling_v3_i2v
+
+MODEL_SKILL=$(sac model get kling_v3_i2v)
+# → $MODEL_SKILL contains Body Template and required/optional Fields; never print it
+
+sac generate submit --body-json '{
+  "model": "kling_v3_i2v",
+  "dash_scope": true,
+  "moderation": true,
+  "input": [{"params": {"prompt": "...", "image": "https://..."}}],
+  "metadata": {}
+}'
+```
+
+---
+
 ## Async Task Flow
 
 For long-running generation tasks, use `--async` to get the task ID immediately, then poll separately:
@@ -554,6 +719,7 @@ Lowercase `https_proxy` is ignored by Node.js `fetch`.
 
 ```
 --api-key flag  >  SAC_API_KEY env  >  ~/.sac/config.json  >  (error: not authenticated)
+--base-url flag >  SAC_MULTIMODAL_BASE_URL / SAC_LLM_BASE_URL env  >  config file  >  built-in defaults
 --output flag   >  SAC_OUTPUT env   >  config file         >  auto-detect by TTY
 --timeout flag  >  SAC_TIMEOUT env  >  config file         >  300 seconds
 ```
