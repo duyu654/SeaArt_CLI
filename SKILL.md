@@ -7,6 +7,8 @@ description: Use sac (SeaArt CLI) to generate images, video, audio, and 3D asset
 
 Operational reference for the binary-only public mirror. Read this after `CLAUDE.md` or `AGENTS.md`.
 
+If you are installing this into Claude Code as a skill, copy this file to `~/.claude/skills/sac/SKILL.md` after installation. Claude Code loads skills at session start, so restart Claude Code before expecting `/sac` to be available.
+
 ## Install
 
 Run from the repository root (the directory containing `install.sh`):
@@ -41,16 +43,25 @@ SAC_INSTALL_DIR=/usr/local/bin bash install.sh
 
 **Required before any generate or chat command.**
 
+Both an API key and a gateway `base_url` are required. The public mirror does not hard-code a gateway URL; use the gateway URL provided by the service owner.
+
 Save a key to `~/.sac/config.json` (validates before saving):
 
 ```bash
-sac auth login --api-key sa-xxxxxxxx
+sac auth login --api-key sa-xxxxxxxx --base-url https://gateway.example.com
 ```
 
 Or pass via environment variable (takes precedence over config file, no file write):
 
 ```bash
 export SAC_API_KEY=sa-xxxxxxxx
+export SAC_BASE_URL=https://gateway.example.com
+```
+
+If the key is already saved but the gateway is not, persist it separately:
+
+```bash
+sac config set --key base_url --value https://gateway.example.com
 ```
 
 Verify:
@@ -88,6 +99,10 @@ sac auth logout
   "authenticated": true,
   "key": "sa-a...xxxx",
   "source": "config file",
+  "gateway": {
+    "base_url": "https://gateway.example.com",
+    "source": "config file"
+  },
   "config": "/Users/you/.sac/config.json"
 }
 ```
@@ -110,6 +125,7 @@ sac auth logout
   "saved": true,
   "key": "sa-a...xxxx",
   "config": "/Users/you/.sac/config.json",
+  "base_url": "https://gateway.example.com",
   "verification": {
     "status": "valid",
     "message": "API key accepted; probe task was not found, as expected.",
@@ -168,8 +184,8 @@ Use `generate image / video / audio / 3d` directly only when the model and flags
 
 | Flag | Description |
 |---|---|
-| `--api-key <token>` | Temporary bearer token for this command only; does not persist. Exception: `auth login --api-key` validates and saves it |
-| `--base-url <url>` | Temporary gateway base URL for this command only; does not persist |
+| `--api-key <token>` | Temporary bearer token for this command only. Exception: `auth login --api-key` validates and saves it |
+| `--base-url <url>` | Temporary gateway base URL for this command only. Exception: `auth login --base-url` validates and saves it |
 | `--output json\|text` | Force output format (default: auto-detect by TTY) |
 | `--timeout <seconds>` | Request timeout (default: 300) |
 | `--quiet` | Suppress spinners and info messages |
@@ -187,6 +203,8 @@ sac --base-url https://gateway.example.com generate image --prompt "..."
 ```
 
 `auth login --api-key` is different: it validates the token and writes it to persisted config. The temporary meaning only applies to non-login commands.
+
+For `auth login`, `--base-url` is intentionally persistent: it is validated with the key and saved as normalized `base_url`.
 
 `--base-url` accepts a gateway root (`https://gateway.example.com`) or explicit `/model` / `/llm` base URLs. It only affects the current command and never writes config.
 
@@ -206,8 +224,7 @@ Priority order (highest to lowest):
 | `timeout` | `SAC_TIMEOUT` | `300` |
 | `default_image_model` | — | `volces_seedream_4_5` |
 | `default_chat_model` | — | `deepseek-v3-0324` |
-| `multimodal_base_url` | `SAC_MULTIMODAL_BASE_URL` | SeaArt gateway |
-| `llm_base_url` | `SAC_LLM_BASE_URL` | SeaArt gateway |
+| `base_url` | `SAC_BASE_URL` | not configured |
 
 ```bash
 sac config show                                      # view current config
@@ -221,8 +238,7 @@ sac config set --key timeout --value 600
 
 ```json
 {
-  "multimodal_base_url": "https://openresty-gateway.api.seaart.ai/model",
-  "llm_base_url": "https://openresty-gateway.api.seaart.ai/llm",
+  "base_url": null,
   "output": "json",
   "timeout": 300,
   "config_file": "/Users/you/.sac/config.json",
@@ -231,7 +247,7 @@ sac config set --key timeout --value 600
 }
 ```
 
-Valid `config set` keys: `api_key`, `output`, `timeout`, `default_image_model`, `default_chat_model`, `multimodal_base_url`, `llm_base_url`
+Valid `config set` keys: `api_key`, `output`, `timeout`, `default_image_model`, `default_chat_model`, `base_url`
 
 ## Output Semantics
 
@@ -331,6 +347,8 @@ sac generate video --prompt "commercial" --model vidu_q3_reference --image-urls 
 sac generate video --prompt "commercial" --model alibaba_wanx26_reference --reference-urls https://example.com/img.jpg
 sac generate video --prompt "a fox in snow" --model volces_seedance_3_0 --resolution 720p
 sac generate video --model volces_seedance_30_i2v --image-url https://example.com/first.jpg --prompt "slow push"
+sac generate video --prompt "cinematic city at night" --model minimax_hailuo_02 --duration 10 --resolution 768P --prompt-optimizer false
+sac generate video --model minimax_hailuo_23_fast_i2v --image-url https://example.com/first.jpg --prompt "gentle push in"
 sac generate video --list-models
 ```
 
@@ -371,6 +389,8 @@ Key flags: `--duration`, `--size`, `--aspect-ratio`, `--resolution`, `--seed`, `
 sac generate audio --prompt "epic orchestral theme"
 sac generate audio --prompt "pop anthem" --model mureka_song_generator --lyrics "verse one..."
 sac generate audio --model kling_video_to_audio --video-url https://example.com/clip.mp4 --sound-effect-prompt "rain and city"
+sac generate audio --prompt "indie folk, wistful, warm guitar" --model minimax_music_25_plus --instrumental --format wav
+sac generate audio --prompt "你好，这是一段旁白" --model minimax_t2a --voice-id female-chengshu --voice-speed 1.1 --output-format url
 ```
 
 Built-in default model: `lyria_3_pro_preview`
@@ -379,6 +399,9 @@ Built-in default model: `lyria_3_pro_preview`
 - `lyria_3_pro_preview` — music from text prompt; requires `--prompt`
 - `mureka_song_generator` — song with lyrics; requires `--lyrics`; optional `--prompt`, `--mureka-model`, `--n`, `--reference-id`, `--vocal-id`, `--melody-id`
 - `kling_video_to_audio` — generate audio for a video; requires `--video-url` or `--video-id`; optional `--sound-effect-prompt`, `--n`
+- `minimax_music_25`, `minimax_music_25_plus` — MiniMax music generation; supports `--lyrics`, `--lyrics-optimizer`, `--sample-rate`, `--bitrate`, `--format`; `--instrumental` is only supported by `minimax_music_25_plus`
+- `minimax_music_generation` — MiniMax music generation with required `--minimax-model`
+- `minimax_t2a` — MiniMax text-to-speech; supports `--minimax-model`, `--voice-id`, `--voice-speed`, `--voice-volume`, `--voice-pitch`, `--voice-emotion`, `--sample-rate`, `--bitrate`, `--format`, `--channel`, `--output-format`
 
 **`--output json` (polling complete):**
 
@@ -598,8 +621,8 @@ sac model search --output json                             # machine-readable
 
 ```json
 {
-  "count": 12,
-  "results": [
+  "estimatedTotalHits": 12,
+  "hits": [
     {
       "id": "kling_v3_i2v",
       "name": "kling_v3_i2v",
@@ -633,7 +656,7 @@ Returns raw SKILL.md content to stdout. Use with `generate submit` for full para
 ```bash
 # Discover → inspect → call workflow
 sac model search --type i2v --provider kling --output json \
-  | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(d.results[0].name)"
+  | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(d.hits[0].name)"
 # → kling_v3_i2v
 
 MODEL_SKILL=$(sac model get kling_v3_i2v)
@@ -719,7 +742,7 @@ Lowercase `https_proxy` is ignored by Node.js `fetch`.
 
 ```
 --api-key flag  >  SAC_API_KEY env  >  ~/.sac/config.json  >  (error: not authenticated)
---base-url flag >  SAC_MULTIMODAL_BASE_URL / SAC_LLM_BASE_URL env  >  config file  >  built-in defaults
+--base-url flag >  SAC_BASE_URL env  >  config file  >  not configured
 --output flag   >  SAC_OUTPUT env   >  config file         >  auto-detect by TTY
 --timeout flag  >  SAC_TIMEOUT env  >  config file         >  300 seconds
 ```
